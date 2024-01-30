@@ -40,6 +40,7 @@ func getProducts(c *gin.Context) {
 }
 
 func welcompage(c *gin.Context) {
+	mesa := c.Param("mesa")
 	//c.HTML(http.StatusOK, "index.html", gin.H{"content": "Index page..."})
 	//c.IndentedJSON(http.StatusOK, products)
 	switch c.Request.Header.Get("Accept") {
@@ -47,7 +48,10 @@ func welcompage(c *gin.Context) {
 		// Se for o JSON
 		c.JSON(http.StatusOK, products)
 	default:
-		c.HTML(http.StatusOK, "index.html", gin.H{"title": "INDEX PAGE",})
+		c.HTML(http.StatusOK, "index.html", gin.H{
+			"title": "INDEX PAGE",
+			"mesa": mesa,
+		})
 	}
 }
 
