@@ -54,7 +54,7 @@
             });
         });
     }
-        
+
 
         function addToCart(name, price) {
             const cartItem = { name, price };
@@ -65,29 +65,26 @@
 
 
         function updateCart() {
-            cartItemList.innerHTML = "";
+            //cartItemList.innerHTML = "";
 
-            cartItems.forEach(item => {
+            /*cartItems.forEach(item => {
                 const cartItem = document.createElement("li");
                 cartItem.innerHTML = `${item.name} - R$ ${item.price.toFixed(2)}`;
                 cartItemList.appendChild(cartItem);
-            });
+            });*/
+            let lastItem = cartItems.slice(-1);
+            const cartItem = document.createElement("li");
+            cartItem.innerHTML = `${lastItem[0].name} - R$ ${lastItem[0].price.toFixed(2)}`;
+            cartItemList.appendChild(cartItem);
         }
 
 
         function updatePrice() {            
-            //cartTotalPrice.innerHTML = "";
-
-            /*for (let i = 0; i < cartItems.length; i++) {
-                const item = cartItems[i];
-                totalPrice += item.price;
-            }*/
             let lastItem = cartItems.slice(-1);
-            console.log(lastItem);
-            totalPrice += lastItem.price;
-            console.log(totalPrice);
+            totalPrice += lastItem[0].price;
             cartTotalPrice.innerHTML = `Total R$ ${totalPrice.toFixed(2)}`;
         }
+
 
         const cartItemList = document.getElementById('cart-items');
         const cartTotalPrice = document.getElementById('cart-total-price');
