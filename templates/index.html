@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">    
     <link rel="stylesheet" href="/static/css/style.css">
     <title>Cardápio Online</title>    
 </head>
@@ -15,25 +16,38 @@
     <script>
         src="/static/script/script.js"
         function renderMenu() {
-        const menuContainer = document.getElementById('menu-container');
-        const products = getProducts();
-
-        products.forEach(product => {
-            const menuItem = document.createElement('div');
-            menuItem.classList.add('menu-item');
-            menuItem.innerHTML = `<h2>${product.name}</h2><p>R$ ${product.price.toFixed(2)}</p>`;
-            menuContainer.appendChild(menuItem);
+            const menuContainer = document.getElementById('menu-container');
+            // Chama a função getProducts, que retorna uma Promise
+            getProducts().then(products => {
+                products.forEach(product => {
+                    const menuItem = document.createElement('div');
+                    menuItem.classList.add('menu-item');
+                    menuItem.innerHTML = `<h2>${product.name}</h2><p>R$ ${product.price.toFixed(2)}</p>`;
+                    menuContainer.appendChild(menuItem);
+                });
+            }).catch(error => {
+                console.error('Erro ao obter produtos:', error);
+            });
+            }
+        function getProducts() {
+        // Retorna uma Promise
+        return new Promise((resolve, reject) => {
+            fetch('http://localhost:8080/', {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                resolve(data); // Resolve a Promise com os dados recebidos
+            })
+            .catch(error => {
+                console.error('Erro ao obter produtos:', error);
+                reject(error); // Rejeita a Promise em caso de erro
+            });
         });
     }
-        function getProducts() {
-            return [
-                { name: 'Pizza Margherita', price: 15.99 },
-                { name: 'Hamburguer Clássico', price: 8.99 },
-                { name: 'Salada Caesar', price: 7.49 },
-                { name: 'Sushi Misto', price: 18.99 },
-                { name: 'Spaghetti Bolognese', price: 12.99 }
-            ];
-        }
         window.onload = renderMenu;
     </script>
 </body>
