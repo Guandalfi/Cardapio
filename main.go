@@ -40,7 +40,15 @@ func getProducts(c *gin.Context) {
 }
 
 func welcompage(c *gin.Context) {
-	c.HTML(http.StatusOK, "index.html", gin.H{"content": "Index page..."})
+	//c.HTML(http.StatusOK, "index.html", gin.H{"content": "Index page..."})
+	//c.IndentedJSON(http.StatusOK, products)
+	switch c.Request.Header.Get("Accept") {
+	case "application/json":
+		// Se for o JSON
+		c.JSON(http.StatusOK, products)
+	default:
+		c.HTML(http.StatusOK, "index.html", gin.H{"title": "INDEX PAGE",})
+	}
 }
 
 // getAlbums responds with the list of all albums as JSON
@@ -82,6 +90,8 @@ func main() {
 	router.Static("/static", "./static/")
 
 	router.GET("/", welcompage)
+	
+	router.GET("/:mesa", welcompage)
 
 	router.GET("/albums", getAlbums)
 
