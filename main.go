@@ -1,45 +1,39 @@
 package main
 
 import (
+	"database/sql"
+
 	"net/http"
+
+	"fmt"
+
+	"log"
+
+	"github.com/go-sql-driver/mysql"
 
 	"github.com/gin-gonic/gin"
 )
 
-// album represents data about a record album.
-type album struct {
-	ID     string  `json:"id"`
-	Title  string  `json:"title"`
-	Artist string  `json:"Artist"`
-	Price  float64 `json:"Price"`
-}
-
-// albums slice to seed record album data.
-var albums = []album {
-	{ID: "1", Title: "Blue Train", Artist: "John Coltrane", Price: 56.99},
-	{ID: "2", Title: "Jeru", Artist: "Gerry Mulligan", Price: 17.99},
-	{ID: "3", Title: "Sarah Vaughan and Clifford Brown", Artist: "Sarah Vaughan", Price: 39.99},
-	{ID: "4", Title: "The Modern Sound of Betty Carter", Artist: "Betty Carter", Price: 49.99},
-}
-
-type product struct {
-	Name string `json:"name"`
+type Product struct {
+	Name  string  `json:"name"`
 	Price float64 `json:"price"`
 }
 
-var products = []product {
+var db *sql.DB
+
+/*var products = []Product{
 	{Name: "Pizza Margherita", Price: 15.99},
 	{Name: "Hamburguer Clássico", Price: 8.99},
 	{Name: "Salada Caesar", Price: 7.49},
 	{Name: "Sushi Misto", Price: 18.99},
 	{Name: "Spaghetti Bolognese", Price: 12.99},
-}
+}*/
 
 func getProducts(c *gin.Context) {
-	c.IndentedJSON(http.StatusOK, products)
+	c.IndentedJSON(http.StatusOK, 1)
 }
 
-func welcompage(c *gin.Context) {
+func welcompage(products, c *gin.Context) {
 	mesa := c.Param("mesa")
 	//c.HTML(http.StatusOK, "index.html", gin.H{"content": "Index page..."})
 	//c.IndentedJSON(http.StatusOK, products)
@@ -50,58 +44,70 @@ func welcompage(c *gin.Context) {
 	default:
 		c.HTML(http.StatusOK, "index.html", gin.H{
 			"title": "INDEX PAGE",
-			"mesa": mesa,
+			"mesa":  mesa,
 		})
 	}
 }
 
-// getAlbums responds with the list of all albums as JSON
-func getAlbums(c *gin.Context) {
-	c.IndentedJSON(http.StatusOK, albums)
+func connectMysql() {
+	// Capture connection properties.
+	cfg := mysql.Config{
+		User:                 ("root"),
+		Passwd:               ("senha1"),
+		Net:                  "tcp",
+		Addr:                 "127.0.0.1:3307",
+		DBName:               "pira",
+		AllowNativePasswords: true,
+	}
+	// Get a database handle.
+	var err error
+	db, err = sql.Open("mysql", cfg.FormatDSN())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	pingErr := db.Ping()
+	if pingErr != nil {
+		log.Fatal(pingErr)
+	}
+	fmt.Println("Connected!")
 }
 
-// GetAlbumByID locates the album whose ID value matches th id parameter sent by the client, then returns tha algum as a response.
-func getAlbumByID(c *gin.Context) {
-	id := c.Param("id")
+func getAllProducts() ([]Product, error) {
+	rows, err := db.Query("SELECT descpro01, prevend01 from cadpro ORDER BY descpro01;")
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	//Loop over the list of albums, looking for an album whose ID values matches the parameter.
-	for _, a := range albums {		
-		if a.ID == id {
-			c.IndentedJSON(http.StatusOK, a)
-			return
+	var products []Product
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var product Product
+		if err := rows.Scan(&product.Name, &product.Price); err != nil {
+			return nil, fmt.Errorf("Todos os produtos: %v", err)
 		}
+		products = append(products, product)
 	}
-	c.IndentedJSON(http.StatusNotFound, gin.H{"message": "album not found"})
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("Todos produtos: %v", err)
+	}
+	return products, nil
 }
 
-// postAlbums adds an album from JSON received in the request body.
-func postAlbums(c *gin.Context) {
-	var newAlbum album
-
-	//Call BindJSON to bind the received JSON to newAlbum.
-	if err := c.BindJSON(&newAlbum); err != nil {
-		return
-	}
-
-	//Add the new album to the slice.
-	albums = append(albums, newAlbum)
-	c.IndentedJSON(http.StatusCreated, newAlbum)
-}
+var products []Product = getAllProducts()
 
 func main() {
+	connectMysql()
+
 	router := gin.Default()
 	router.LoadHTMLGlob("templates/*.html")
 	router.Static("/static", "./static/")
 
 	router.GET("/", welcompage)
-	
+
 	router.GET("/:mesa", welcompage)
-
-	router.GET("/albums", getAlbums)
-
-	router.GET("/albums/:id", getAlbumByID)
-
-	router.POST("/albums", postAlbums)
 
 	router.Run("localhost:8080")
 }
