@@ -9,6 +9,8 @@ import (
 
 	"log"
 
+	"os"
+
 	"github.com/go-sql-driver/mysql"
 
 	"github.com/gin-gonic/gin"
@@ -21,19 +23,11 @@ type Product struct {
 
 var db *sql.DB
 
-/*var products = []Product{
-	{Name: "Pizza Margherita", Price: 15.99},
-	{Name: "Hamburguer Clássico", Price: 8.99},
-	{Name: "Salada Caesar", Price: 7.49},
-	{Name: "Sushi Misto", Price: 18.99},
-	{Name: "Spaghetti Bolognese", Price: 12.99},
-}*/
-
 func getProducts(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, 1)
 }
 
-func welcompage(products, c *gin.Context) {
+func welcompage(c *gin.Context, products []Product) {
 	mesa := c.Param("mesa")
 	//c.HTML(http.StatusOK, "index.html", gin.H{"content": "Index page..."})
 	//c.IndentedJSON(http.StatusOK, products)
@@ -74,40 +68,58 @@ func connectMysql() {
 }
 
 func getAllProducts() ([]Product, error) {
-	rows, err := db.Query("SELECT descpro01, prevend01 from cadpro ORDER BY descpro01;")
+	rows, err := db.Query("SELECT descpro01, prevend01 from cadpro where prevend01 > 0 and codfil01 = 1 ORDER BY descpro01;")
 	if err != nil {
 		log.Fatal(err)
+		return nil, err
 	}
 
 	var products []Product
 
 	defer rows.Close()
 
+	// Configurando o log fora do loop
+	flags := os.O_APPEND | os.O_CREATE | os.O_WRONLY
+	file, err := os.OpenFile("log.txt", flags, 0666)
+	if err != nil {
+		log.Fatal(err)
+		return nil, err
+	}
+	// Redirecting logs to the file
+	log.SetOutput(file)
+
 	for rows.Next() {
-		var product Product
-		if err := rows.Scan(&product.Name, &product.Price); err != nil {
-			return nil, fmt.Errorf("Todos os produtos: %v", err)
+		var pt Product
+		if err := rows.Scan(&pt.Name, &pt.Price); err != nil {
+			return nil, fmt.Errorf("todos os produtos: %v", err)
 		}
-		products = append(products, product)
+		products = append(products, pt)
+
 	}
+
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("Todos produtos: %v", err)
+		return nil, fmt.Errorf("todos produtos: %v", err)
 	}
+
 	return products, nil
 }
 
-var products []Product = getAllProducts()
-
 func main() {
 	connectMysql()
+	allProducts, _ := getAllProducts()
+	fmt.Println(allProducts)
 
 	router := gin.Default()
 	router.LoadHTMLGlob("templates/*.html")
 	router.Static("/static", "./static/")
 
-	router.GET("/", welcompage)
+	router.GET("/", func(c *gin.Context) {
+		welcompage(c, allProducts)
+	})
 
-	router.GET("/:mesa", welcompage)
+	router.GET("/:mesa", func(c *gin.Context) {
+		welcompage(c, allProducts)
+	})
 
 	router.Run("localhost:8080")
 }
