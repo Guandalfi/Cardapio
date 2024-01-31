@@ -17,8 +17,12 @@ import (
 )
 
 type Product struct {
-	Name  string  `json:"name"`
-	Price float64 `json:"price"`
+	Name         string  `json:"name"`
+	Price        float64 `json:"price"`
+	SubGroupID   int     `json:"groupid"`
+	SubGroupName string  `json:"groupname"`
+	ClassID      int     `json:"classid"`
+	ClassName    string  `json:"classname"`
 }
 
 var db *sql.DB
@@ -68,7 +72,7 @@ func connectMysql() {
 }
 
 func getAllProducts() ([]Product, error) {
-	rows, err := db.Query("SELECT descpro01, prevend01 from cadpro where prevend01 > 0 and codfil01 = 1 ORDER BY descpro01;")
+	rows, err := db.Query("select a.descpro01, a.prevend01, b.codgss00, b.descgss00, COALESCE(c.codigo, 0), coalesce(c.descricao, 'sem classe') from cadpro a left join cadgss b on a.codgss01 = b.codgss00 left join tabcla c on a.classe01 = c.codigo where a.codfil01 = 1 and a.prevend01 > 0 and a.sitpro01 is null order by a.descpro01;")
 	if err != nil {
 		log.Fatal(err)
 		return nil, err
@@ -90,13 +94,12 @@ func getAllProducts() ([]Product, error) {
 
 	for rows.Next() {
 		var pt Product
-		if err := rows.Scan(&pt.Name, &pt.Price); err != nil {
+		if err := rows.Scan(&pt.Name, &pt.Price, &pt.SubGroupID, &pt.SubGroupName, &pt.ClassID, &pt.ClassName); err != nil {
 			return nil, fmt.Errorf("todos os produtos: %v", err)
 		}
 		products = append(products, pt)
-
 	}
-
+	log.Println(products)
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("todos produtos: %v", err)
 	}
