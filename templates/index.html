@@ -47,6 +47,7 @@
             .then(response => response.json())
             .then(data => {
                 resolve(data); // Resolve a Promise com os dados recebidos
+                console.log(data)
             })
             .catch(error => {
                 console.error('Erro ao obter produtos:', error);
